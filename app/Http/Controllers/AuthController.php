@@ -2,6 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\AuthRequest;
+use App\Http\Resources\AuthResource;
+use Kreait\Firebase\Factory;
+
 use Illuminate\Http\Request;
 use Kreait\Firebase\Auth as FirebaseAuth;
 use Kreait\Firebase\Exception\FirebaseException;
@@ -16,20 +20,17 @@ class AuthController extends Controller
 
     public function __construct()
     {
-        $factory = (new \Kreait\Firebase\Factory)
+        $factory = (new Factory)
             ->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
 
         $this->auth = $factory->createAuth();
     }
-    
-    public function loginWithGoogle(Request $request)
-    {
-        try {
-            $request->validate([
-                'token' => 'required|string',
-            ]);
 
-            $token = $request->input('token');
+    public function loginWithGoogle(AuthRequest $request)
+    {
+            $validated = $request->validated();
+
+            $token = $validated['token'];
 
             $verifiedIdToken = $this->auth->verifyIdToken($token);
 
@@ -42,26 +43,20 @@ class AuthController extends Controller
                     'name' => $firebaseUser->displayName,
                     'email' => $firebaseUser->email,
                     'provider_id' => $firebaseUser->uid,
-                    'password' => bcrypt(Str::random(16)),
+                    'password' => Str::random(16),
                 ]);
             }
 
-            // Generate Passport token
-            $tokenResult = $user->createToken('Personal Access Token');
+            $tokenResult = $user->accessToken();
+            
             $token = $tokenResult->accessToken;
 
-            return response()->json([
+            return AuthResource::make([
                 'user' => $user,
                 'access_token' => $token,
                 'token_type' => 'Bearer',
                 'expires_at' => $tokenResult->token->expires_at,
             ]);
-
-        } catch (FirebaseException $e) {
-            return response()->json(['error' => 'Invalid token or authentication failed'], 401);
-        } catch (\Exception $e) {
-            return response()->json(['error' => 'Something went wrong: '.$e->getMessage()], 500);
-        }
     }
 
     public function logout(Request $request)
