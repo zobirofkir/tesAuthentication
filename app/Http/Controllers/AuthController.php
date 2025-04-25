@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Kreait\Firebase\Factory;
 use Kreait\Firebase\Auth as FirebaseAuth;
 use Kreait\Firebase\Exception\FirebaseException;
 use Illuminate\Validation\ValidationException;
@@ -15,19 +14,9 @@ class AuthController extends Controller
 {
     protected $auth;
 
-    public function __construct()
+    public function __construct(FirebaseAuth $auth)
     {
-        $firebase = (new Factory)
-            ->withServiceAccount([
-                'api_key' => env('FIREBASE_API_KEY'),
-                'auth_domain' => env('FIREBASE_AUTH_DOMAIN'),
-                'project_id' => env('FIREBASE_PROJECT_ID'),
-                'storage_bucket' => env('FIREBASE_STORAGE_BUCKET'),
-                'messaging_sender_id' => env('FIREBASE_MESSAGING_SENDER_ID'),
-                'app_id' => env('FIREBASE_APP_ID'),
-            ]);
-
-        $this->auth = $firebase->createAuth();
+        $this->auth = $auth;
     }
 
     public function loginWithGoogle(Request $request)
