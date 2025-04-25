@@ -14,11 +14,14 @@ class AuthController extends Controller
 {
     protected $auth;
 
-    public function __construct(FirebaseAuth $auth)
+    public function __construct()
     {
-        $this->auth = $auth;
-    }
+        $factory = (new \Kreait\Firebase\Factory)
+            ->withServiceAccount(base_path(env('FIREBASE_CREDENTIALS')));
 
+        $this->auth = $factory->createAuth();
+    }
+    
     public function loginWithGoogle(Request $request)
     {
         try {
