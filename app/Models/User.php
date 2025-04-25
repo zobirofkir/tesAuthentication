@@ -50,6 +50,6 @@ class User extends Authenticatable
 
     public function accessToken()
     {
-        return $this->createToken('authToken')->accessToken;
+        return $this->createToken('accessToken');
     }
 }

@@ -28,37 +28,33 @@ class AuthController extends Controller
 
     public function loginWithGoogle(AuthRequest $request)
     {
-            $validated = $request->validated();
+        $validated = $request->validated();
+        $token = $validated['token'];
 
-            $token = $validated['token'];
+        $verifiedIdToken = $this->auth->verifyIdToken($token);
+        $firebaseUser = $this->auth->getUser($verifiedIdToken->claims()->get('sub'));
 
-            $verifiedIdToken = $this->auth->verifyIdToken($token);
+        $user = User::where('email', $firebaseUser->email)->first();
 
-            $firebaseUser = $this->auth->getUser($verifiedIdToken->claims()->get('sub'));
-
-            $user = User::where('email', $firebaseUser->email)->first();
-
-            if (!$user) {
-                $user = User::create([
-                    'name' => $firebaseUser->displayName,
-                    'email' => $firebaseUser->email,
-                    'provider_id' => $firebaseUser->uid,
-                    'password' => Str::random(16),
-                ]);
-            }
-
-            $tokenResult = $user->accessToken();
-            
-            $token = $tokenResult->accessToken;
-
-            return AuthResource::make([
-                'user' => $user,
-                'access_token' => $token,
-                'token_type' => 'Bearer',
-                'expires_at' => $tokenResult->token->expires_at,
+        if (!$user) {
+            $user = User::create([
+                'name' => $firebaseUser->displayName,
+                'email' => $firebaseUser->email,
+                'provider_id' => $firebaseUser->uid,
+                'password' => Str::random(16),
             ]);
-    }
+        }
 
+        $tokenResult = $user->accessToken();
+
+        return AuthResource::make([
+            'user' => $user,
+            'access_token' => $tokenResult->accessToken,
+            'token_type' => 'Bearer',
+            'expires_at' => $tokenResult->token->expires_at,
+        ]);
+    }
+    
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();
